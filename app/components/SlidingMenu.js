@@ -7,10 +7,10 @@ import {
   Animated,
   PanResponder,
   Dimensions,
-  Platform,
   TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons'; // Import Ionicons from Expo package
+import { useNavigation } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 const menuWidth = 0.8 * width;
@@ -18,6 +18,7 @@ const menuWidth = 0.8 * width;
 const SlidingMenu = ({ isVisible, onClose }) => {
   const [menuVisible, setMenuVisible] = useState(false);
   const slideAnim = React.useRef(new Animated.Value(-menuWidth)).current;
+  const navigation = useNavigation();
 
   useEffect(() => {
     if (isVisible) {
@@ -51,16 +52,13 @@ const SlidingMenu = ({ isVisible, onClose }) => {
     onClose(); // Call onClose when the overlay is clicked
   };
 
-  // Define panResponder and its handlers
   const panResponder = React.useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (event, gestureState) => {
-        // Allow the panResponder to respond only if sliding to the left
         return gestureState.dx < 0;
       },
       onPanResponderMove: (event, gestureState) => {
-        // Update slideAnim based on gesture movement to the left
         if (gestureState.dx < 0) {
           slideAnim.setValue(gestureState.dx);
         }
@@ -70,10 +68,8 @@ const SlidingMenu = ({ isVisible, onClose }) => {
         const closeThreshold = 0.99 * menuWidth;
 
         if (dx < closeThreshold) {
-          // Close the menu
           closeMenu();
         } else {
-          // Bring menu back to original position
           openMenu();
         }
       },
@@ -105,28 +101,29 @@ const SlidingMenu = ({ isVisible, onClose }) => {
               </View>
             </View>
             <View style={styles.menu}>
-              <TouchableOpacity style={styles.menuItem} onPress={onClose}>
+              <TouchableOpacity 
+                style={styles.menuItem} 
+                onPress={onClose}>
                 <View style={styles.menuItemContent}>
                   <View style={styles.menuIconContainer}>
-                    <Ionicons name="add-circle-outline" size={24} color="#ef2969" />
-                  </View>
-                  <Text style={styles.menuText}>Create a Community</Text>
-                </View>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.menuItem} onPress={onClose}>
-                <View style={styles.menuItemContent}>
-                  <View style={styles.menuIconContainer}>
-                    <Ionicons name="search-outline" size={24} color="#ef2969" />
+                    <Ionicons name="search-outline" size={24} color="white" />
                   </View>
                   <Text style={styles.menuText}>Discover communities</Text>
                 </View>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.menuItem} onPress={onClose}>
+
+              <TouchableOpacity 
+                style={[styles.menuItem, styles.createCommunityItem]} 
+                onPress={() => {
+                  onClose();
+                  navigation.navigate('CreateCommunityScreen');
+                }}
+              >
                 <View style={styles.menuItemContent}>
                   <View style={styles.menuIconContainer}>
-                    <Ionicons name="settings-outline" size={24} color="#ef2969" />
+                    <Ionicons name="add-circle-outline" size={24} color="white" />
                   </View>
-                  <Text style={styles.menuText}>Settings</Text>
+                  <Text style={styles.menuText}>Launch your podium</Text>
                 </View>
               </TouchableOpacity>
             </View>
@@ -151,8 +148,8 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent black
-    zIndex: 0, // Ensure overlay is behind the menu
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 0,
   },
   header: {
     flexDirection: 'row',
@@ -165,7 +162,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold'
+    fontWeight: 'bold',
   },
   searchContainer: {
     padding: 10,
@@ -174,7 +171,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    backgroundColor:'lightgrey',
+    backgroundColor: 'lightgrey',
     borderColor: 'transparent',
     borderRadius: 10,
     paddingHorizontal: 10,
@@ -189,21 +186,26 @@ const styles = StyleSheet.create({
   },
   menu: {
     flex: 1,
+    justifyContent: 'space-between',
     paddingVertical: 10,
   },
   menuItem: {
     paddingHorizontal: 20,
     paddingVertical: 5,
-    marginBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  createCommunityItem: {
+    marginTop: 'auto',
+    borderTopWidth:1,
+    borderColor:'#ccc',
   },
   menuItemContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   menuIconContainer: {
-    backgroundColor: 'black',//#ccc
+    backgroundColor: 'black',
     padding: 10,
     borderRadius: 10,
     marginRight: 10,

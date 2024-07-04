@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { AppRegistry, View, Animated, Dimensions } from 'react-native';
 import MainNavigator from './navigation/mainNavigator';
 import SlidingMenu from './components/SlidingMenu';
-
 import { AuthProvider } from './AuthContext';
 const { width } = Dimensions.get('window');
 
@@ -40,7 +39,8 @@ const App = () => {
   return (
     <AuthProvider>
       <View style={{ flex: 1 }}>
-        <MainNavigator runFunction={toggleMenu} />
+        <MainNavigator
+        runFunction={toggleMenu} />
         <SlidingMenu isVisible={isMenuVisible} onClose={handleClose} slideAnim={slideAnim} />
       </View>
     </AuthProvider>

@@ -5,24 +5,35 @@
       "bundler": "metro"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-screen-orientation",
+        {
+          "initialOrientation": "DEFAULT"
+        }
+      ]
     ],
     "name": "Podium",
     "slug": "Podium",
     "version": "1.0.0",
     "sdkVersion": "51.0.0",
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "description": "Your app description",
     "ios": {
-      "bundleIdentifier": "com.toftal.Podium"
+      "bundleIdentifier": "com.toftal.Podium",
+      "requireFullScreen": true
     },
     "android": {
       "package": "com.toftal.Podium"
     },
     "splash": {
-      "image": "./assets/images/toftal.png", 
-      "resizeMode": "contain", 
-      "backgroundColor": "#ffffff" 
+      "image": "./assets/images/toftal.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
     }
   }
 }

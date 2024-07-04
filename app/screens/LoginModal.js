@@ -13,168 +13,367 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../AuthContext'; // Import the custom hook
+import { useAuth } from '../AuthContext';
+import axiosService from '../../services/axiosService';
+import Toast from 'react-native-toast-message';
 
 const LoginModal = ({ closeModal }) => {
-  const { isAuthenticated, login } = useAuth();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [underlineRegister, setUnderlineRegister] = useState(false); // State to underline "Sign up for free"
-  const [forgotClicked, setForgotClicked] = useState(false); // State to track forgot password click
-  const [loginClicked, setLoginClicked] = useState(false); // State to track login button click
-  const [resetSent, setResetSent] = useState(false); // State to track if reset email is sent
+  const [underlineRegister, setUnderlineRegister] = useState(false);
+  const [forgotClicked, setForgotClicked] = useState(false);
+  const [loginClicked, setLoginClicked] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
-  const [registering, setRegistering] = useState(false); // State to track if registering
+  const [registering, setRegistering] = useState(false);
   const [registerEmail, setRegisterEmail] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
-  const [registerError, setRegisterError] = useState('');
+  const [registerName, setRegisterName] = useState('');
 
-  // Animation and gesture state
+  const [loginError, setLoginError] = useState(false);
+  const [registerError, setRegisterError] = useState(false);
+
   const [pan] = useState(new Animated.ValueXY());
 
-  // Refs for text input focus
   const passwordInputRef = useRef(null);
   const emailInputRef = useRef(null);
   const registerPasswordRef = useRef(null);
   const confirmPasswordRef = useRef(null);
 
-  // Pan responder to handle gestures
   const panResponder = PanResponder.create({
     onStartShouldSetPanResponder: () => true,
     onPanResponderMove: Animated.event([null, { dy: pan.y }], { useNativeDriver: false }),
     onPanResponderRelease: (e, gestureState) => {
       if (gestureState.dy > 50) {
-        // Close modal if dragged down by more than 50 pixels
         closeModal();
       } else {
-        // Reset position if not dragged enough
         Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
       }
     },
   });
 
-  // Function to handle overlay press (dismiss keyboard and unfocus inputs)
   const handleOverlayPress = () => {
-    Keyboard.dismiss(); // Dismiss the keyboard
-    if (emailInputRef.current) emailInputRef.current.blur(); // Unfocus email input
-    if (passwordInputRef.current) passwordInputRef.current.blur(); // Unfocus password input
-    if (registerPasswordRef.current) registerPasswordRef.current.blur(); // Unfocus register password input
-    if (confirmPasswordRef.current) confirmPasswordRef.current.blur(); // Unfocus confirm password input
+    Keyboard.dismiss();
+    if (emailInputRef.current) emailInputRef.current.blur();
+    if (passwordInputRef.current) passwordInputRef.current.blur();
+    if (registerPasswordRef.current) registerPasswordRef.current.blur();
+    if (confirmPasswordRef.current) confirmPasswordRef.current.blur();
   };
 
-  // Email validation function
   const validateEmail = (email) => {
-    // Basic email validation using regex
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
   const validateLogin = () => {
     if (!email.trim() && !password.trim()) {
-      setLoginError('Email & password are required.');
-      return;
+      setLoginError(true);
+      Toast.show({
+        type: 'error',
+        text1: 'Email & Password are required',
+        visibilityTime: 3000,
+        autoHide: true,
+      });
+      setTimeout(() => { 
+        setLoginError(false);
+      }, 2000);
+      return false;
     }
 
     if (email.trim() && !validateEmail(email.trim())) {
-      setLoginError('Invalid email address.');
-      return;
+      setLoginError(true);
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid Email Address',
+        visibilityTime: 3000,
+        autoHide: true,
+      });
+      setTimeout(() => { 
+        setLoginError(false);
+      }, 2000);
+      return false;
     }
 
     if (!password.trim()) {
-      setLoginError('Password is required.');
-      return;
+      setLoginError(true);
+      Toast.show({
+        type: 'error',
+        text1: 'Password is required',
+        visibilityTime: 3000,
+        autoHide: true,
+      });
+      setTimeout(() => { 
+        setLoginError(false);
+      }, 2000);
+      return false;
     }
 
-    // Password strength validation
     if (password.length < 8) {
-      setLoginError('Password must be at least 8 characters long.');
-      return;
+      setLoginError(true);
+      Toast.show({
+        type: 'error',
+        text1: 'Password must be at least 8 characters long.',
+        visibilityTime: 3000,
+        autoHide: true,
+      });
+      setTimeout(() => { 
+        setLoginError(false);
+      }, 2000);
+      return false;
     }
-    setLoginError('');
+
+    setLoginError(false);
+    return true;
   };
 
   const handleLogin = () => {
-    login()
-    return;
     if (!validateLogin()) {
       return;
     }
-    
-    setLoading(true);
-    setLoginClicked(true); 
-    // Simulate API call for login
-    setTimeout(() => {
-      console.log('Logging in with:', email, password);
+
+    const data = {
+      email: email,
+      password: password,
+    };
+    axiosService
+    .login(data)
+    .then((response) => {
       setLoading(false);
-      //login(); // Set isAuthenticated to true
-      closeModal();
-    }, 1500);
+      console.log('Login successful:', response);
+      const token = response.access_token;
+      if(token){
+        login(token);
+        Toast.show({
+          type: 'success',
+          text1: 'Login Successful',
+          visibilityTime: 2000,
+          autoHide: true,
+          onHide: () => closeModal(),
+        });
+      }else{
+        Toast.show({
+          type: 'error',
+          text1: 'Failed to log you in. Try again.',
+          visibilityTime: 2000,
+          autoHide: true,
+          onHide: () => closeModal(),
+        });
+      }
+    })
+    .catch((error) => {
+      setLoading(false);
+      console.error('Error logging in:', error);
+      // Handle specific error scenarios if needed
+      if (error.response) {
+        setLoginError(error.response.data.message);
+        Toast.show({
+          type: 'error',
+          text1: 'Login Error',
+          text2: error.response.data.message,
+          visibilityTime: 3000,
+          autoHide: true,
+        });
+      } else if (error.request) {
+        setLoginError('Network Error. Please try again.');
+        Toast.show({
+          type: 'error',
+          text1: 'Login Error',
+          text2: 'Network Error. Please try again.',
+          visibilityTime: 3000,
+          autoHide: true,
+        });
+      } else {
+        setLoginError('An unexpected error occurred. Please try again later.');
+        Toast.show({
+          type: 'error',
+          text1: 'Login Error',
+          text2: 'An unexpected error occurred. Please try again later.',
+          visibilityTime: 3000,
+          autoHide: true,
+        });
+      }
+    });
+
   };
 
   const handleForgotPassword = () => {
-    console.log('Forgot password');
-    setForgotClicked(true); // Set forgot password button clicked
-    // Implement logic for forgot password
-    // For demonstration, let's assume an API call to send reset email
+    setForgotClicked(true);
     setTimeout(() => {
       setResetSent(true);
     }, 1500);
   };
 
   const handleRegistration = () => {
-    setUnderlineRegister(!registering); // Toggle underline "Sign up for free"
-    setRegistering(!registering); // Toggle registering state
+    setUnderlineRegister(!registering);
+    setRegistering(!registering);
   };
 
   const validateRegistration = () => {
-    if (!registerEmail.trim() && !registerPassword.trim()) {
-      setRegisterError('Email & password are required.');
-      return;
+    if (!registerName.trim() && !registerEmail.trim() && !registerPassword.trim()) {
+      setRegisterError(true);
+      Toast.show({
+        type: 'error',
+        text1: 'Name, Email & Password are required',
+        visibilityTime: 3000,
+        autoHide: true,
+      });
+      setTimeout(() => { 
+        setRegisterError(false);
+      }, 2000);
+      return false;
+    }
+
+    if (!registerName.trim()) {
+      setRegisterError(true);
+      Toast.show({
+        type: 'error',
+        text1: 'Name is required',
+        visibilityTime: 3000,
+        autoHide: true,
+      });
+      setTimeout(() => { 
+        setRegisterError(false);
+      }, 2000);
+      return false;
     }
 
     if (registerEmail.trim() && !validateEmail(registerEmail.trim())) {
-      setRegisterError('Invalid email address.');
-      return;
+      setRegisterError(true);
+      Toast.show({
+        type: 'error',
+        text1: 'Email is invalid',
+        visibilityTime: 3000,
+        autoHide: true,
+      });
+      setTimeout(() => { 
+        setRegisterError(false);
+      }, 2000);
+      return false;
     }
 
     if (!registerPassword.trim()) {
-      setRegisterError('Password is required.');
-      return;
+      setRegisterError(true);
+      Toast.show({
+        type: 'error',
+        text1: 'Password is required',
+        visibilityTime: 3000,
+        autoHide: true,
+      });
+      setTimeout(() => { 
+        setRegisterError(false);
+      }, 2000);
+      return false;
     }
 
     if (registerPassword !== confirmPassword) {
-      setRegisterError('Passwords do not match.');
-      return;
+      setRegisterError(true);
+      Toast.show({
+        type: 'error',
+        text1: 'Passwords do not match',
+        visibilityTime: 3000,
+        autoHide: true,
+      });
+      setTimeout(() => { 
+        setRegisterError(false);
+      }, 2000);
+      return false;
     }
 
-    // Password strength validation
     if (registerPassword.length < 8) {
-      setRegisterError('Password must be at least 8 characters long.');
-      return;
+      setRegisterError(true);
+      Toast.show({
+        type: 'error',
+        text1: 'Password must be at least 8 characters long' ,
+        visibilityTime: 3000,
+        autoHide: true,
+      });
+      setTimeout(() => { 
+        setRegisterError(false);
+      }, 2000);
+      return false;
     }
 
-    // Clear previous errors if valid
-    setRegisterError('');
+    setRegisterError(false);
+    return true;
   };
 
   const handleRegisterSubmit = () => {
-    // Validate before proceeding with registration
-    validateRegistration();
-
-    if (registerError) {
-      return; // Do not proceed if there are errors
+    if (!validateRegistration()) {
+      return;
     }
-
-    // Simulate API call for registration
     setLoading(true);
-    setTimeout(() => {
-      console.log('Registering with:', registerEmail, registerPassword);
-      setLoading(false);
-      setRegistering(false);
-      closeModal();
-    }, 1500);
+    const data = {
+      name: registerName,
+      email: registerEmail,
+      password: registerPassword,
+      provider: "None"
+    };
+    axiosService
+      .register(data)
+      .then((response) => {
+        setLoading(false);
+        console.log('Registration successful:', response);
+        // Assuming your API response returns a token in the response
+        const token = response.access_token; 
+        if(token){
+          login(token);
+          setRegistering(false);
+          Toast.show({
+            type: 'success',
+            text1: 'Registration Successful',
+            visibilityTime: 2000,
+            autoHide: true,
+            onHide: () => closeModal()
+          });
+        }else{
+          setRegistering(false);
+          Toast.show({
+            type: 'error',
+            text1: 'Failed to create session. Try to log in.',
+            visibilityTime: 2000,
+            autoHide: true,
+            onHide: () => closeModal()
+          });
+        }
+      })
+      .catch((error) => {
+        setLoading(false);
+        console.error('Error registering:', error);
+        // Handle specific error scenarios if needed
+        if (error.response) {
+          // Server responded with an error status code
+          setRegisterError(error.response.data.message);
+          Toast.show({
+            type: 'error',
+            text1: 'Registration Error',
+            text2: error.response.data.message,
+            visibilityTime: 3000,
+            autoHide: true,
+          });
+        } else if (error.request) {
+          // Request made but no response received
+          setRegisterError('Network Error. Please try again.');
+          Toast.show({
+            type: 'error',
+            text1: 'Registration Error',
+            text2: 'Network Error. Please try again.',
+            visibilityTime: 3000,
+            autoHide: true,
+          });
+        } else {
+          // Something else happened
+          setRegisterError('An unexpected error occurred. Please try again later.');
+          Toast.show({
+            type: 'error',
+            text1: 'Registration Error',
+            text2: 'An unexpected error occurred. Please try again later.',
+            visibilityTime: 3000,
+            autoHide: true,
+          });
+        }
+      });
   };
 
   const focusPasswordInput = () => {
@@ -195,6 +394,8 @@ const LoginModal = ({ closeModal }) => {
         style={[styles.modalContainer, { transform: [{ translateY: pan.y }] }]}
         {...panResponder.panHandlers}
       >
+      <Toast/>
+
         <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
           <Ionicons name="chevron-down" size={24} color="black" />
         </TouchableOpacity>
@@ -223,14 +424,13 @@ const LoginModal = ({ closeModal }) => {
                   value={email}
                   onChangeText={(text) => {
                     setEmail(text);
-                    validateLogin();
                   }}
-                  returnKeyType="next"
+                  returnKeyType="Next"
                   onSubmitEditing={focusPasswordInput}
                   blurOnSubmit={false}
                 />
               </View>
-              <View style={styles.inputContainer}>
+              <View style={[styles.inputContainer, loginError && (!password.trim() || password.length < 8) ? styles.inputError : null]}>
                 <Ionicons name="lock-closed-outline" size={24} color="black" style={styles.inputIcon} />
                 <TextInput
                   ref={passwordInputRef}
@@ -241,16 +441,15 @@ const LoginModal = ({ closeModal }) => {
                   value={password}
                   onChangeText={(text) => {
                     setPassword(text);
-                    validateLogin();
                   }}
-                  returnKeyType="done"
+                  returnKeyType="Done"
                   onSubmitEditing={handleLogin}
                 />
               </View>
               <TouchableOpacity
-                style={[styles.loginButton, { width: '100%', opacity: loginClicked ? 0.5 : 1 }]}
+                style={[styles.loginButton, { width: '100%', opacity: loginError ? 0.5 : 1 }]}
                 onPress={handleLogin}
-                disabled={loading|| loginError}
+                disabled={loading || loginError}
               >
                 {loading ? (
                   <ActivityIndicator size="small" color="white" />
@@ -282,8 +481,25 @@ const LoginModal = ({ closeModal }) => {
               </TouchableOpacity>
 
               <Text style={{ marginTop: 10, marginBottom: 10, fontSize: 24, fontWeight: 'bold' }}>OR</Text>
-              <View style={[styles.inputContainer, registerError && !registerEmail.trim() ? styles.inputError : null]}>
+              <View
+                style={[styles.inputContainer, registerError && !registerName.trim() ? styles.inputError : null]}
+              >
                 <Ionicons name="person-outline" size={24} color="black" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Name"
+                  placeholderTextColor="lightgrey"
+                  value={registerName}
+                  onChangeText={(text) => setRegisterName(text)}
+                  returnKeyType="Next"
+                  onSubmitEditing={() => emailInputRef.current.focus()}
+                  blurOnSubmit={false}
+                />
+              </View>
+              <View
+                style={[styles.inputContainer, registerError && !registerEmail.trim() ? styles.inputError : null]}
+              >
+                <Ionicons name="mail-outline" size={24} color="black" style={styles.inputIcon} />
                 <TextInput
                   ref={emailInputRef}
                   style={styles.input}
@@ -292,14 +508,20 @@ const LoginModal = ({ closeModal }) => {
                   value={registerEmail}
                   onChangeText={(text) => {
                     setRegisterEmail(text);
-                    validateRegistration();
                   }}
-                  returnKeyType="next"
+                  returnKeyType="Next"
                   onSubmitEditing={() => registerPasswordRef.current.focus()}
                   blurOnSubmit={false}
                 />
               </View>
-              <View style={[styles.inputContainer, registerError && (!registerPassword.trim() || registerPassword.length < 8) ? styles.inputError : null]}>
+              <View
+                style={[
+                  styles.inputContainer,
+                  registerError && (!registerPassword.trim() || registerPassword.length < 8)
+                    ? styles.inputError
+                    : null,
+                ]}
+              >
                 <Ionicons name="lock-closed-outline" size={24} color="black" style={styles.inputIcon} />
                 <TextInput
                   ref={registerPasswordRef}
@@ -310,14 +532,18 @@ const LoginModal = ({ closeModal }) => {
                   value={registerPassword}
                   onChangeText={(text) => {
                     setRegisterPassword(text);
-                    validateRegistration();
                   }}
-                  returnKeyType="done"
+                  returnKeyType="Done"
                   onSubmitEditing={handleRegisterSubmit}
                 />
               </View>
 
-              <View style={[styles.inputContainer, registerError && registerPassword !== confirmPassword ? styles.inputError : null]}>
+              <View
+                style={[
+                  styles.inputContainer,
+                  registerError && registerPassword !== confirmPassword ? styles.inputError : null,
+                ]}
+              >
                 <Ionicons name="lock-closed-outline" size={24} color="black" style={styles.inputIcon} />
                 <TextInput
                   ref={confirmPasswordRef}
@@ -328,7 +554,6 @@ const LoginModal = ({ closeModal }) => {
                   value={confirmPassword}
                   onChangeText={(text) => {
                     setConfirmPassword(text);
-                    validateRegistration();
                   }}
                   returnKeyType="done"
                   onSubmitEditing={handleRegisterSubmit}
@@ -337,7 +562,7 @@ const LoginModal = ({ closeModal }) => {
               <TouchableOpacity
                 style={[styles.loginButton, { width: '100%', opacity: loading ? 0.5 : 1 }]}
                 onPress={handleRegisterSubmit}
-                disabled={loading|| registerError}
+                disabled={loading || registerError}
               >
                 {loading ? (
                   <ActivityIndicator size="small" color="white" />
@@ -351,8 +576,7 @@ const LoginModal = ({ closeModal }) => {
             </>
           )}
 
-          {registering && registerError ? <Text style={styles.errorText}>{registerError}</Text> : null}
-          {!registering && loginError ? <Text style={styles.errorText}>{loginError}</Text> : null}
+          
           {resetSent && (
             <Text style={{ marginTop: 10, color: 'green' }}>Reset link sent to {email}. Check your email.</Text>
           )}
@@ -360,16 +584,12 @@ const LoginModal = ({ closeModal }) => {
           {!registering ? (
             <TouchableOpacity onPress={handleRegistration} style={styles.registerLink}>
               <Text>Don't have an account? </Text>
-              <Text style={[styles.registerLinkText, underlineRegister]}>
-                Sign up for free
-              </Text>
+              <Text style={[styles.registerLinkText, underlineRegister]}>Sign up for free</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity onPress={handleRegistration} style={styles.registerLink}>
               <Text>Already have an account? </Text>
-              <Text style={[styles.registerLinkText, underlineRegister ]}>
-                Log In instead
-              </Text>
+              <Text style={[styles.registerLinkText, underlineRegister]}>Log In instead</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -462,20 +682,17 @@ const styles = StyleSheet.create({
     color: '#ef2969',
     fontWeight: 'bold',
   },
-  underlinedText: {
-    textDecorationLine: 'underline',
-  },
 
   errorText: {
     color: 'red',
-    fontWeight:'bold',
-    fontSize:12,
+    fontWeight: 'bold',
+    fontSize: 12,
     marginTop: 10,
     textAlign: 'center',
   },
   resetText: {
     color: 'green',
-    fontWeight:'bold',
+    fontWeight: 'bold',
     marginTop: 10,
     textAlign: 'center',
   },

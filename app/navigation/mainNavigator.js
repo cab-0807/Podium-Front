@@ -1,71 +1,108 @@
-
 // MainNavigator.js
-import React, { useState } from 'react';
-import { View, Image } from 'react-native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import { View, Image, Text,TouchableOpacity,TouchableHighlight,StyleSheet } from 'react-native';
+import { createStackNavigator } from '@react-navigation/stack';
+import { Ionicons } from '@expo/vector-icons'; // Assuming you use Expo for vector icons
 import HomeScreen from '../screens/HomeScreen';
 import ChatScreen from '../screens/ChatScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import NotificationScreen from '../screens/NotificationScreen';
-import Header from '../components/Header';
+import Footer from '../components/Footer'; 
+import CreateCommunityScreen from '../screens/CreateCommunityScreen';
+import CommunityScreen from '../screens/Community/CommunityScreen'
+import AddComponent from '../components/AddComponent'
+import { useNavigation } from 'expo-router';
+import { useAuth } from '../AuthContext'; 
 
-const Tab = createBottomTabNavigator();
-const userImage = require('../../assets/images/logo-toftal.png');
+const Stack = createStackNavigator();
+
 
 const MainNavigator = ({ runFunction }) => {
-  const [isMenuVisible, setIsMenuVisible] = useState(false);
+  const navigation = useNavigation()
 
+const { currentScreen } = useAuth(); 
+  const handleAddButtonPress = () => {
+    if(currentScreen != "AddComponent")
+    navigation.navigate('AddComponent')
+  
+  };
   const pressed = () => {
     runFunction();
   };
 
   return (
-    <View style={{ flex: 1 }}>
-      <Header runFunction={pressed} />
-      <Tab.Navigator
-        screenOptions={({ route }) => ({
-          tabBarIcon: ({ focused, color, size }) => {
-            let iconName;
-            if (route.name === 'Home') {
-              iconName = 'home';
-            } else if (route.name === 'About') {
-              iconName = focused ? 'chatbubble' : 'chatbubble-outline';
-            } else if (route.name === 'Settings') {
-              iconName = focused ? 'notifications' : 'notifications-outline';
-            } else if (route.name === 'Profile') {
-              return (
-                <Image
-                  source={userImage}
-                  style={{ width: 30, height: 30, borderRadius: 15 }}
-                />
-              );
-            }
-
-            return <Ionicons name={iconName} size={size} color={color} />;
-          },
-          tabBarActiveTintColor: 'white',
-          tabBarInactiveTintColor: 'gray',
-          tabBarStyle: {
-            backgroundColor: 'black',
-            position: 'absolute',
-            bottom: -30,
-            paddingTop: 20,
-            paddingBottom: 20,
-            left: 0,
-            right: 0,
-          },
+      <View style={{ flex: 1,}}>
+        <Stack.Navigator screenOptions={({ route }) => ({
           headerShown: false,
-          tabBarShowLabel: false,
+          cardStyle: {
+          },
         })}
       >
-        <Tab.Screen name="Home" component={HomeScreen} />
-        <Tab.Screen name="About" component={ChatScreen} />
-        <Tab.Screen name="Settings" component={NotificationScreen} />
-        <Tab.Screen name="Profile" component={ProfileScreen} />
-      </Tab.Navigator>
-    </View>
+            <Stack.Screen name="Home" component={HomeScreen} initialParams={{ runFunction: pressed }}/>
+            <Stack.Screen name="Chat" component={ChatScreen} />
+            <Stack.Screen name="Notifications" component={NotificationScreen} />
+            <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen name="CreateCommunityScreen" component={CreateCommunityScreen} />
+            <Stack.Screen name="CommunityScreen" component={CommunityScreen} />
+            <Stack.Screen name="AddComponent" component={AddComponent} />
+            
+        </Stack.Navigator>
+
+        {/* Fixed Button */}
+        <TouchableHighlight
+          style={styles.addButtonTouchableHighlight}
+          underlayColor="whitesmoke"
+          onPress={handleAddButtonPress}
+        >
+          <Ionicons name="add" size={24} color="black" />
+        </TouchableHighlight>
+        <Footer />
+      </View>
   );
 };
+
+const styles = StyleSheet.create({
+
+    addButton: {
+      backgroundColor: 'whitesmoke',
+      padding: 10,
+      borderRadius: 5,
+
+      position: 'absolute',
+      bottom: 20,
+      left: "42%",
+      width: 70,
+      height: 70,
+      borderRadius: 40,
+      backgroundColor: 'white',
+      alignItems: 'center',
+      justifyContent: 'center',
+      elevation: 5, // for Android shadow
+      shadowColor: '#000', // for iOS shadow
+      shadowOpacity: 0.4,
+      shadowOffset: { width: 3, height: 3 },
+      shadowRadius: 10,
+      zIndex: 10,
+    },
+    addButtonTouchableHighlight: {
+      borderRadius: 5,
+      padding: 10,
+      position: 'absolute',
+      bottom: 20,
+      left: "42%",
+      width: 70,
+      height: 70,
+      borderRadius: 40,
+      backgroundColor: 'white',
+      alignItems: 'center',
+      justifyContent: 'center',
+      elevation: 5, // for Android shadow
+      shadowColor: '#000', // for iOS shadow
+      shadowOpacity: 0.4,
+      shadowOffset: { width: 3, height: 3 },
+      shadowRadius: 10,
+      zIndex: 10,
+    },
+});
 
 export default MainNavigator;

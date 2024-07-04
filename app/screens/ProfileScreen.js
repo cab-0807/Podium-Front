@@ -1,20 +1,28 @@
-import React, { useState } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
-import EditProfileModal from './EditProfileModal'; // Import the EditProfileModal component
+import React, { useState, useRef } from 'react';
+import { View, Text, Image, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, Alert } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
+import EditProfileModal from './EditProfileModal';
+import { useNavigation } from '@react-navigation/native'; // Import useNavigation hook
+import { useAuth } from '../AuthContext';
 
 const ProfileScreen = () => {
   const [isEditModalVisible, setEditModalVisible] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const { logout } = useAuth();
+  const navigation = useNavigation(); // Hook to access navigation object
+
+  // Profile and memberships data
   const profile = {
     userImage: require('../../assets/images/toftal.png'),
     firstName: "John",
     lastName: "Doe",
     username: "johndoe",
     bio: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-    isOnline: true, // Example: Change as per your application state
-    joinedDate: "June 2020", // Example: Change as per your application state
-    contributorsCount: 10, // Replace with actual number of contributors
-    followersCount: 100, // Replace with actual number of followers
-    followingCount: 50, // Replace with actual number of following
+    isOnline: true,
+    joinedDate: "June 2020",
+    contributorsCount: 10,
+    followersCount: 100,
+    followingCount: 50,
   };
 
   const memberships = [
@@ -22,82 +30,130 @@ const ProfileScreen = () => {
     { name: "Silver Member", since: "Mar 2023" },
   ];
 
+  // Toggle edit modal visibility
   const toggleEditModal = () => {
     setEditModalVisible(!isEditModalVisible);
   };
 
+  // Save profile changes (mock implementation)
   const saveProfileChanges = (editedProfile) => {
-    // Handle saving profile changes here (e.g., update state, send to server)
     console.log("Saving profile changes:", editedProfile);
-    // Close the modal after saving changes
     toggleEditModal();
   };
 
+  // Toggle dropdown menu visibility
+  const handleToggleMenu = () => {
+    setShowMenu(!showMenu);
+  };
+
+  // Handle logout action
+  const handleLogout = () => {
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Logout', onPress: () => {
+        logout();
+        navigation.navigate('Home'); // Navigate to 'Home' screen after logout
+      } }
+    ]);
+  };
+
+  // Close dropdown menu if clicked outside
+  const handleOutsidePress = () => {
+    if (showMenu) {
+      setShowMenu(false);
+    }
+  };
+
   return (
-    <View style={styles.container}>
-      {/* Profile Photo */}
-      <Image source={profile.userImage} style={styles.profileImage} />
+    <TouchableWithoutFeedback onPress={handleOutsidePress}>
+      <View style={styles.container}>
+        {/* Dropdown Menu Icon */}
+        <TouchableOpacity style={styles.menuButton} onPress={handleToggleMenu}>
+          <Icon name="ellipsis-horizontal-outline" size={24} color="#666" />
+        </TouchableOpacity>
 
-      {/* Firstname and Lastname */}
-      <Text style={styles.name}>{profile.firstName} {profile.lastName}</Text>
-
-      {/* Username */}
-      <Text style={styles.username}>@{profile.username}</Text>
-
-      {/* Bio */}
-      <Text style={styles.bio}>{profile.bio}</Text>
-
-      {/* Edit Profile Button */}
-      <TouchableOpacity style={styles.editButton} onPress={toggleEditModal}>
-        <Text style={styles.editButtonText}>Edit Profile</Text>
-      </TouchableOpacity>
-
-      {/* Online Status and Joined Date */}
-      <View style={styles.container2}>
-        {/* Online Status */}
-        <View style={styles.statusContainer}>
-          <View style={[styles.statusIndicator, { backgroundColor: profile.isOnline ? '#4CAF50' : '#ccc' }]} />
-          <Text style={styles.statusText}>{profile.isOnline ? 'Online now' : 'Offline'}</Text>
-        </View>
-        {/* Joined Date */}
-        <Text style={styles.joinedDate}>Joined in {profile.joinedDate}</Text>
-
-        {/* Contributor, Followers, Following Counts */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text style={styles.statCount}>{profile.contributorsCount}</Text>
-            <Text style={styles.statLabel}>Contributors</Text>
+        {/* Menu items */}
+        {showMenu && (
+          <View style={styles.menu}>
+            <TouchableOpacity onPress={toggleEditModal} style={styles.menuItem}>
+              <Icon name="settings-outline" size={20} style={styles.menuIcon} />
+              <Text style={styles.menuItemText}>Settings</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem1}>
+              <Icon name="help-circle-outline" size={20} style={styles.menuIcon1} />
+              <Text style={styles.menuItemText1}>Help Center</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleLogout} style={styles.menuItem1}>
+              <Icon name="log-out-outline" size={20} style={styles.menuIcon1} />
+              <Text style={styles.menuItemText1}>Log out</Text>
+            </TouchableOpacity>
           </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statCount}>{profile.followersCount}</Text>
-            <Text style={styles.statLabel}>Followers</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statCount}>{profile.followingCount}</Text>
-            <Text style={styles.statLabel}>Following</Text>
-          </View>
-        </View>
+        )}
 
-        {/* Memberships */}
-        <View style={styles.membershipsContainer}>
-          <Text style={styles.membershipsTitle}>Memberships</Text>
-          {memberships.map((membership, index) => (
-            <View key={index} style={styles.membershipItem}>
-              <Text style={styles.membershipName}>{membership.name}</Text>
-              <Text style={styles.membershipSince}>Since {membership.since}</Text>
+        {/* Profile Photo */}
+        <Image source={profile.userImage} style={styles.profileImage} />
+
+        {/* Firstname and Lastname */}
+        <Text style={styles.name}>{profile.firstName} {profile.lastName}</Text>
+
+        {/* Username */}
+        <Text style={styles.username}>@{profile.username}</Text>
+
+        {/* Bio */}
+        <Text style={styles.bio}>{profile.bio}</Text>
+
+        {/* Edit Profile Button */}
+        <TouchableOpacity style={styles.editButton} onPress={toggleEditModal}>
+          <Text style={styles.editButtonText}>Edit Profile</Text>
+        </TouchableOpacity>
+
+        {/* Online Status and Joined Date */}
+        <View style={styles.container2}>
+          {/* Online Status */}
+          <View style={styles.statusContainer}>
+            <View style={[styles.statusIndicator, { backgroundColor: profile.isOnline ? '#4CAF50' : '#ccc' }]} />
+            <Text style={styles.statusText}>{profile.isOnline ? 'Online now' : 'Offline'}</Text>
+          </View>
+          {/* Joined Date */}
+          <Text style={styles.joinedDate}>Joined in {profile.joinedDate}</Text>
+
+          {/* Contributor, Followers, Following Counts */}
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <Text style={styles.statCount}>{profile.contributorsCount}</Text>
+              <Text style={styles.statLabel}>Contributors</Text>
             </View>
-          ))}
-        </View>
-      </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statCount}>{profile.followersCount}</Text>
+              <Text style={styles.statLabel}>Followers</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statCount}>{profile.followingCount}</Text>
+              <Text style={styles.statLabel}>Following</Text>
+            </View>
+          </View>
 
-      {/* Edit Profile Modal */}
-      <EditProfileModal
-        isVisible={isEditModalVisible}
-        profileData={profile}
-        onSave={saveProfileChanges}
-        onClose={toggleEditModal}
-      />
-    </View>
+          {/* Memberships */}
+          <View style={styles.membershipsContainer}>
+            <Text style={styles.membershipsTitle}>Memberships</Text>
+            {memberships.map((membership, index) => (
+              <View key={index} style={styles.membershipItem}>
+                <Text style={styles.membershipName}>{membership.name}</Text>
+                <Text style={styles.membershipSince}>Since {membership.since}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* Edit Profile Modal */}
+        <EditProfileModal
+          isVisible={isEditModalVisible}
+          profileData={profile}
+          onSave={saveProfileChanges}
+          onClose={toggleEditModal}
+        />
+      </View>
+    </TouchableWithoutFeedback>
   );
 };
 
@@ -110,7 +166,7 @@ const styles = StyleSheet.create({
   profileImage: {
     width: 100,
     height: 100,
-    borderRadius: 75, // half of width and height to make it round
+    borderRadius: 50,
     marginBottom: 20,
   },
   name: {
@@ -202,6 +258,62 @@ const styles = StyleSheet.create({
   membershipSince: {
     fontSize: 12,
     color: '#999',
+  },
+  menuButton: {
+    position: 'absolute',
+    top: -10,
+    right: 10,
+    zIndex: 1,
+  },
+  menu: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: 'white',
+    elevation: 5,
+    zIndex: 1,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 10,
+    paddingRight: 50,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+  },
+
+  menuItem1: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 10,
+
+    paddingRight: 50,
+  },
+  menuItemText: {
+    fontSize: 16,
+    marginLeft: 10,
+    fontWeight:'bold'
+  },
+  menuItemText1: {
+    fontSize: 16,
+    marginLeft: 10,
+    color:"#ccc"
+  },
+  menuIcon: {
+    marginRight: 0,
+    color:'black',
+    fontWeight:'bold'
+  },
+
+  menuIcon1: {
+    marginRight: 0,
+    color:'#ccc',
+    fontWeight:'bold'
   },
 });
 
